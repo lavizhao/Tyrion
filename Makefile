@@ -10,3 +10,6 @@ stat : data.py statistics.py util/read_conf.py util/ds.py
 
 split : data.py split.py util/read_conf.py util/ds.py
 	pypy split.py
+
+test_sp : util/sparse_vector.py
+	python util/sparse_vector.py
