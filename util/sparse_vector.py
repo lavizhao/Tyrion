@@ -21,6 +21,9 @@ class sparse_vector:
     def __getitem__(self,key):
         return self.data.get(key,0)
 
+    def __setitem__(self,key,value):
+        self.data[key] = value
+        
     def __eq__(self,other):
         if isinstance(other, type(self)):
             result = (self.data == other.data)
@@ -29,8 +32,7 @@ class sparse_vector:
         else:
             result = NotImplemented
         return result
-            
-        
+
     def __add__(self,x):
         d1 = self.data
         d2 = x.data
@@ -93,6 +95,7 @@ class sparse_vector:
         return self.__class__(temp_d)
 
     def sum(self):
+        #print self.data.values()
         return sum(self.data.values())
 
     def norm(self):
@@ -166,6 +169,11 @@ class Test(unittest.TestCase):
         sp1 = sparse_vector({'a':2,'b':4})
 
         self.assertEqual(sp1.norm(),math.sqrt(2*2+4*4))
+
+    def testFuck(self):
+        sp1 = sparse_vector({'a':2,'b':4})
+        sp1[2] = 4
+        print(sp1)
         
 if __name__ == '__main__':
     unittest.main()

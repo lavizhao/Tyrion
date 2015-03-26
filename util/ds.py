@@ -41,3 +41,34 @@ class Tran:
         self.item_category = slots[4]
         self.time = slots[5]
 
+
+from sparse_vector import sparse_vector as sv        
+
+#用户向量  ====> 仅供测试
+class user_vector:
+    def __init__(self,user):
+
+        #浏览记录，记录所有的商品
+        self.beh_vec = sv({})
+
+        #时间字典
+        self.time_vec = sv({})
+
+        #日期字典
+        self.date_vec = sv({})
+
+        #购买次数字典，只有四维{1:12,2:23,...}
+        self.shopping_vec = sv({})
+
+        #用户出现地理位置信息字典
+        self.geo_vec = sv({})
+        
+        self.user = user
+
+
+    def __str__(self):
+        return "用户名%s\n浏览记录%s\n浏览时间%s\n浏览日期%s\n购买次数:%s\n地理位置%s\n"\
+            %(self.user,self.beh_vec.__str__(),self.time_vec.__str__(),\
+              self.date_vec.__str__(),self.shopping_vec.__str__(),\
+              self.geo_vec.__str__())
+
