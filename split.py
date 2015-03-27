@@ -9,7 +9,7 @@ import csv
 
 cf = get_conf()
 
-target = set(["2014-12-17","2014-12-18"])
+target = set(["2014-12-18"])
 
 #分割函数
 def spt():
@@ -27,6 +27,7 @@ def spt():
         else:
             train.writerow(line)
 
+            
         count += 1
         if count % 1000000 == 0:
             print("进度%sM"%(count/1000000.0))

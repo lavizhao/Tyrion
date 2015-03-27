@@ -13,3 +13,12 @@ split : data.py split.py util/read_conf.py util/ds.py
 
 test_sp : util/sparse_vector.py
 	python util/sparse_vector.py
+
+usim : sim_matrix.py util/data.py util/sim_function.py
+	pypy sim_matrix.py
+
+create_db : db.py
+	python db.py create
+
+del_db : db.py
+	python db.py del

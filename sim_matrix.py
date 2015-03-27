@@ -8,9 +8,6 @@ import time
 from data import get_conf,one_tran
 from multiprocessing import Process,Queue
 from util.ds import user_vector
-from util.sim_function import user_beh_cos_sim as Ubcs
-from util.sim_function import user_time_sim as Uts
-from util.sim_function import user_shopping_sim as Uss
 from util.sim_function import user_sim as Us
 
 #这个队列是进程队列，用户名都放在了里面
@@ -87,21 +84,22 @@ def uumat():
         p.start()
             
     ct = 0
-    mct = 10000 * 10000 / 2
+    scount = 0
     while 1:
         if oqueue.qsize() >0:
             if ct % 10000 == 0:
-                print "写文件进度",ct
+                print "写文件进度",ct/1000000.0,"M"
                 
             rs = oqueue.get()
             t.write(rs)
-            mct -= 1
+            scount = 0
             ct += 1
         else:
-            if mct == 0:
+            if scount > 100:
                 break
             else:
                 time.sleep(0.1)
+                scount += 1
     
 if __name__ == '__main__':
     uumat()

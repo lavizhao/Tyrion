@@ -21,7 +21,10 @@ def stat():
     dates = set()
 
     beh = {}
-    
+
+    mu,mi = 0,0
+    mgeo = ""
+    mcat = ""
 
     count = 0
     for tran in ot:
@@ -29,6 +32,16 @@ def stat():
         iset.add(tran.item_id)
         geo.add(tran.user_geohash)
         dates.add(tran.date)
+
+        mu = max(mu,tran.user_id)
+        mi = max(mi,tran.item_id)
+
+        if len(tran.user_geohash) > len(mgeo):
+            mgeo = tran.user_geohash
+
+        if len(tran.item_category) > len(mcat):
+            mcat = tran.item_category
+            
 
         beh.setdefault(tran.date,{})
         beh[tran.date].setdefault(tran.behavior_type,0)
@@ -43,6 +56,10 @@ def stat():
     print "商品个数",len(iset)
     print "地理位置",len(geo)
     print "日期",dates
+    print "最大用户",mu
+    print "最大物品",mi
+    print "最大地理位置",mgeo
+    print "最大物品种类",mcat
 
     for dt in beh:
         print "日期",dt,"行为",beh[dt]

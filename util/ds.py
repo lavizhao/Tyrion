@@ -41,6 +41,16 @@ class Tran:
         self.item_category = slots[4]
         self.time = slots[5]
 
+    def sql_str(self):
+        geo = "ns"
+        if len(self.user_geohash) >= 1:
+            geo = self.user_geohash
+        return "insert into trans values(\"%s\",\"%s\",%s,\"%s\",\"%s\",\"%s\",%s)"\
+            %(self.user_id,self.item_id,\
+              self.behavior_type,geo,\
+              self.item_category,self.date,self.time\
+          )
+    
 
 from sparse_vector import sparse_vector as sv        
 
