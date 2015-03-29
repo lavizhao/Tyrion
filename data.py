@@ -11,6 +11,7 @@ from util.ds import Tran
 from optparse import OptionParser
 #import cPickle as pickle
 import pickle
+import sys
 
 #配置文件存储位置
 cfdir = "conf/data_dir.conf"
@@ -20,8 +21,15 @@ def get_conf():
     return  conf
 
 #返回一条数据，这个具体用在统计数据等其他地方
-def one_tran(tp="tran"):
-    f = open(conf["user_dir"])
+def one_tran(dt="total",tp="tran"):
+    if dt == "total":
+        f = open(conf["user_dir"])
+    elif dt == "test128":
+        f = open(conf["test128"])
+    else:
+        print "未定义文件名%s"%(dt)
+        sys.exit(1)
+    
     reader = csv.reader(f)
 
     count = 0
