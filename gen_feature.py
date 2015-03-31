@@ -5,7 +5,7 @@ feature抽取
 '''
 import mysql.connector
 import sys
-import logging
+import logging,time
 
 from data import one_tran,get_conf
 from util.db import mydb #mysql db的意思
@@ -54,6 +54,11 @@ class abstract_f:
     def transform(self,udict):
         result = {"%s_%s"%(self.get_name(),i):udict[i] for i in udict}
         return result
+
+    def filed_names(self):
+        cand = self.get_cand()
+        return ["%s_%s"%(self.get_name(),i) for i in cand]
+
         
 #用户在过去n天（n可以为0,1,2...35天，取的比较多的原因是怕最后维度不一样）
 #内，的beh次数        
@@ -136,6 +141,7 @@ class user_shopping_beh(abstract_f):
 
         return res
 
+    
 #商品n天内被beh过多少次
 class item_shopping_beh(abstract_f):
     def __init__(self):
@@ -173,8 +179,7 @@ class item_shopping_beh(abstract_f):
                 result[fstr] += 1
 
         res = self.transform(result)
-
-
+        
         return res
 
 
@@ -217,12 +222,9 @@ class category_shopping_beh(abstract_f):
 
         res = self.transform(result)
 
-        for i in res:
-            if res[i] != 0:
-                print i,res[i]
-            
         return res
-        
+
+
         
 #这两个字典是这个文件最重要的部分，经过上一轮的迭代
 #如果特征不变，那么放在normal_list中
@@ -233,19 +235,40 @@ append_list = [user_item_shopping_beh,user_shopping_beh,item_shopping_beh,catego
 
 def main():
     ot = one_tran(dt="test128")
+    #ot = one_tran()
     count = 0
 
     #这是这些类的实例化
     normal_ins = [i() for i in normal_list]
     append_ins = [i() for i in append_list]
 
+    #写入文件
+    fileds = []
+    for norm in normal_ins:
+        fileds.extend(norm.filed_names())
+    for app in append_ins:
+        fileds.extend(app.filed_names())
+
+    t = open(cf["train_dir"],"w")
+    writer = csv.DictWriter(t,fileds)
+
+    first = {i:i for i in fileds}
+    
+    writer.writerow(first)
+    
     for tran in ot:
+        final = {}
         for i in append_ins:
-            i.extract(tran)
+            res = i.extract(tran)
+            final = dict(final,**res) #字典合并
+
+        writer.writerow(final)
+            
         count += 1
         if count % 10 == 0:
             print count
-    
+
+    mdb.dump_cache()
             
 if __name__ == '__main__':
     main()

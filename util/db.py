@@ -9,6 +9,10 @@ import sys
 #import pymysql as mysql
 import mysql.connector
 import logging
+from .read_conf import config
+import cPickle as pickle
+
+cf = config("conf/data_dir.conf")
 
 import random
 
@@ -22,9 +26,20 @@ class mydb:
             logging.error(err)
 
         self.cache = {}
-        self.cache_limit = 20000
+        self.cache_limit = 1000 * 600
         self.select_count = 0
         self.hit_cache = 0
+        self.dump_limit = 10000
+
+        #装载cache
+        db_cache = cf["db_cache"] #获取文件名
+        try :
+            print "载入cache"
+            f = open(db_cache,"rb")
+            self.cache = pickle.load(f)
+            f.close()
+        except:
+            self.cache = {}
             
     def create_db(self,db_name):
         try:        
@@ -65,36 +80,66 @@ class mydb:
 
         
     def select_sql(self,sql_str,db_name):
-        try:
-            self.select_count += 1
-            if (self.select_count) % 300 == 0:
-                print "命中率",1.0 * self.hit_cache / self.select_count,"cache大小",len(self.cache)
 
-            if sql_str in self.cache:
-                self.hit_cache += 1
-                return self.cache[sql_str]
-            
-            cur = self.conn.cursor()
-            
-            cur.execute("use %s"%(db_name))
-            cur.execute(sql_str)
-            
-            result = cur.fetchall()
+        self.select_count += 1
+        if (self.select_count) % 300 == 0:
+            print "命中率",1.0 * self.hit_cache / self.select_count,"cache大小",len(self.cache)
 
-            if len(self.cache) > self.cache_limit:
-                print "clean cache"
-                cache_key = cache.keys()
-                sample = cache_key.random(cache_key,0.25*self.cache_limit)
-                for i in sample:
-                    self.cache.pop(i)
+        if sql_str in self.cache:
+            self.hit_cache += 1
+            return self.cache[sql_str]
+            
+        cur = self.conn.cursor()
+            
+        cur.execute("use %s"%(db_name))
+        cur.execute(sql_str)
+            
+        result = cur.fetchall()
+
+        if len(self.cache) > self.cache_limit:
+            print "clean cache"
+            cache_key = self.cache.keys()
+            sample = random.sample(cache_key,int(0.25*self.cache_limit))
+            for i in sample:
+                self.cache.pop(i)
+            self.cache[sql_str] = result
+            print "cache大小",len(self.cache)    
+        else:
+            #如果cache没有到一半，直接留下
+            if len(self.cache) < (0.5 * self.cache_limit):
                 self.cache[sql_str] = result
-            else:
-                if random.random() < len(result) / 200.0:
-                    self.cache[sql_str] = result
+            elif ( 3 * random.random()) < len(result) / 10.0:
+                self.cache[sql_str] = result
 
-            return result
+        return result
             
-        except Exception as err:
-            logging.error(err)
-            logging.error("select error")
 
+        
+    def dump_cache(self):
+        print "正在存储"
+        
+        cache_key = self.cache.keys()
+        rem_key = []
+        for key in cache_key:
+            if len(self.cache[key]) > 200:
+                pass
+            elif random.random() > 0.5:
+                rem_key.append(key)
+            else:
+                pass
+
+        for key in rem_key :
+            self.cache.pop(key)
+
+        cache_key = self.cache.keys()
+        
+        if len(self.cache) > self.dump_limit:
+            sample = random.sample(cache_key,int(len(self.cache) - self.dump_limit))
+            for i in sample :
+                self.cache.pop(i)
+        print "cache大小", len(self.cache)
+                
+        t = open(cf["db_cache"],"wb")
+        pickle.dump(self.cache,t,True)
+        print "存储完毕"
+        
