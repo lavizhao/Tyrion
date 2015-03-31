@@ -24,8 +24,10 @@ def get_conf():
 def one_tran(dt="total",tp="tran"):
     if dt == "total":
         f = open(conf["user_dir"])
-    elif dt == "test128":
+    elif dt == "test":
         f = open(conf["test128"])
+    elif dt == "train":
+        f = open(conf["train70"])
     else:
         print "未定义文件名%s"%(dt)
         sys.exit(1)

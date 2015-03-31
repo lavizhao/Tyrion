@@ -82,7 +82,7 @@ class mydb:
     def select_sql(self,sql_str,db_name):
 
         self.select_count += 1
-        if (self.select_count) % 300 == 0:
+        if (self.select_count) % 500 == 0:
             print "命中率",1.0 * self.hit_cache / self.select_count,"cache大小",len(self.cache)
 
         if sql_str in self.cache:

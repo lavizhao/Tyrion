@@ -34,9 +34,30 @@ mdb = get_mydb()
 
 last_day = datetime.date(2014,12,18)
 print "last day is ",last_day
+
+#将day转化成datetime.date
+def turn_day(dt):
+    sp = dt.split('-')
+    sp = [int(i) for i in sp]
+    return datetime.date(sp[0],sp[1],sp[2])
+
+def day_tim_beh():
+    day = ["day%s"%(i) for i in range(1,max_day)]
+    beh = ["beh%s"%(i) for i in range(0,5)]
+
+    result = list(itertools.product(day,beh))
+    result = ["%s_%s"%(i,j) for i,j in result]
+
+    return set(result)
     
 #抽象类
 class abstract_f:
+    def set_type(self,date_set):
+        self.date_set = date_set
+
+    def get_type(self):
+        return self.date_set
+        
     #获取类的名字，用来做特征的名字
     def get_name(self):
         return self.__class__.__name__
@@ -59,170 +80,75 @@ class abstract_f:
         cand = self.get_cand()
         return ["%s_%s"%(self.get_name(),i) for i in cand]
 
+
+class feature_time_beh(abstract_f):
+    def __init__(self):
+        pass
+
+    def get_cand(self):
+        return day_tim_beh()
+
+    def get_sql(self,tran):
+        return "haha"
+        
+    def extract(self,tran):
+        assert isinstance(tran,Tran)==True
+
+        td = tran.date
+        if self.get_type() == "train":
+            td = turn_day(td)
+        else:
+            td = last_day
+
+        sql_str = self.get_sql(tran)
+        sql_result = mdb.select_sql(sql_str,"tmall")
+
+        result = dict.fromkeys(self.get_cand(),0)
+        
+        #对于每一条数据，第一位是行为，第二位是日期
+        for msql in sql_result:
+            dt = msql[1]
+            timed = (td-dt).days #日期间隔
+            beh = msql[0]
+
+            #得到特征字符串
+            fstr = "day%s_beh%s"%(timed,beh)
+            if fstr in result:
+                result[fstr] += 1
+
+        res = self.transform(result)
+
+        return res
+
+        
         
 #用户在过去n天（n可以为0,1,2...35天，取的比较多的原因是怕最后维度不一样）
 #内，的beh次数        
-class user_item_shopping_beh(abstract_f):
-    def __init__(self):
-        pass
-
-    def get_cand(self):
-        day = ["day%s"%(i) for i in range(1,max_day)]
-        beh = ["beh%s"%(i) for i in range(0,5)]
-
-        result = list(itertools.product(day,beh))
-        result = ["%s_%s"%(i,j) for i,j in result]
-
-        return set(result)
-
-    def extract(self,tran):
-        assert isinstance(tran,Tran)==True
-
-        user = tran.user_id
+class user_item_shopping_beh(feature_time_beh):
+    def get_sql(self,tran):
         item = tran.item_id
-
-        sql_str = 'select beh,dt from trans where item=\"%s\" and user=\"%s\"'%(item,user)
-        sql_result = mdb.select_sql(sql_str,"tmall")
-
-        result = dict.fromkeys(self.get_cand(),0)
+        user = tran.user_id
+        return 'select beh,dt from trans where item=\"%s\" and user=\"%s\"'%(item,user)
         
-        #对于每一条数据，第一位是行为，第二位是日期
-        for msql in sql_result:
-            dt = msql[1]
-            timed = (last_day-dt).days #日期间隔
-            beh = msql[0]
-
-            #得到特征字符串
-            fstr = "day%s_beh%s"%(timed,beh)
-            if fstr in result:
-                result[fstr] += 1
-
-        res = self.transform(result)
-        return res
-
 
 #用户在过去n天beh过多少次商品
-class user_shopping_beh(abstract_f):
-    def __init__(self):
-        pass
-
-    def get_cand(self):
-        day = ["day%s"%(i) for i in range(1,max_day)]
-        beh = ["beh%s"%(i) for i in range(0,5)]
-
-        result = list(itertools.product(day,beh))
-        result = ["%s_%s"%(i,j) for i,j in result]
-
-        return set(result)
-
-    def extract(self,tran):
-        assert isinstance(tran,Tran)==True
-
+class user_shopping_beh(feature_time_beh):
+    def get_sql(self,tran):
         user = tran.user_id
-        item = tran.item_id
-
-        sql_str = 'select beh,dt from trans where user=\"%s\"'%(user)
-        sql_result = mdb.select_sql(sql_str,"tmall")
-
-        result = dict.fromkeys(self.get_cand(),0)
-        
-        #对于每一条数据，第一位是行为，第二位是日期
-        for msql in sql_result:
-            dt = msql[1]
-            timed = (last_day-dt).days #日期间隔
-            beh = msql[0]
-
-            #得到特征字符串
-            fstr = "day%s_beh%s"%(timed,beh)
-            if fstr in result:
-                result[fstr] += 1
-
-        res = self.transform(result)
-
-        return res
+        return 'select beh,dt from trans where user=\"%s\"'%(user)
 
     
 #商品n天内被beh过多少次
-class item_shopping_beh(abstract_f):
-    def __init__(self):
-        pass
-
-    def get_cand(self):
-        day = ["day%s"%(i) for i in range(1,max_day)]
-        beh = ["beh%s"%(i) for i in range(0,5)]
-
-        result = list(itertools.product(day,beh))
-        result = ["%s_%s"%(i,j) for i,j in result]
-
-        return set(result)
-
-    def extract(self,tran):
-        assert isinstance(tran,Tran)==True
-
-        user = tran.user_id
+class item_shopping_beh(feature_time_beh):
+    def get_sql(self,tran):
         item = tran.item_id
-
-        sql_str = 'select beh,dt from trans where item=\"%s\"'%(item)
-        sql_result = mdb.select_sql(sql_str,"tmall")
-
-        result = dict.fromkeys(self.get_cand(),0)
-        
-        #对于每一条数据，第一位是行为，第二位是日期
-        for msql in sql_result:
-            dt = msql[1]
-            timed = (last_day-dt).days #日期间隔
-            beh = msql[0]
-
-            #得到特征字符串
-            fstr = "day%s_beh%s"%(timed,beh)
-            if fstr in result:
-                result[fstr] += 1
-
-        res = self.transform(result)
-        
-        return res
-
+        return 'select beh,dt from trans where item=\"%s\"'%(item)
 
 #商品所在种类n天内被beh过多少次
-class category_shopping_beh(abstract_f):
-    def __init__(self):
-        pass
-
-    def get_cand(self):
-        day = ["day%s"%(i) for i in range(1,max_day)]
-        beh = ["beh%s"%(i) for i in range(0,5)]
-
-        result = list(itertools.product(day,beh))
-        result = ["%s_%s"%(i,j) for i,j in result]
-
-        return set(result)
-
-    def extract(self,tran):
-        assert isinstance(tran,Tran)==True
-
-        user = tran.user_id
-        item = tran.item_id
+class category_shopping_beh(feature_time_beh):
+    def get_sql(self,tran):
         category = tran.item_category
-
-        sql_str = 'select beh,dt from trans where category=\"%s\"'%(category)
-        sql_result = mdb.select_sql(sql_str,"tmall")
-
-        result = dict.fromkeys(self.get_cand(),0)
-        
-        #对于每一条数据，第一位是行为，第二位是日期
-        for msql in sql_result:
-            dt = msql[1]
-            timed = (last_day-dt).days #日期间隔
-            beh = msql[0]
-
-            #得到特征字符串
-            fstr = "day%s_beh%s"%(timed,beh)
-            if fstr in result:
-                result[fstr] += 1
-
-        res = self.transform(result)
-
-        return res
+        return 'select beh,dt from trans where category=\"%s\"'%(category)
 
 
         
@@ -233,14 +159,18 @@ class category_shopping_beh(abstract_f):
 normal_list = []
 append_list = [user_item_shopping_beh,user_shopping_beh,item_shopping_beh,category_shopping_beh]
 
-def main():
-    ot = one_tran(dt="test128")
+def main(data_set):
+    ot = one_tran(dt=data_set)
     #ot = one_tran()
     count = 0
 
     #这是这些类的实例化
     normal_ins = [i() for i in normal_list]
     append_ins = [i() for i in append_list]
+    for i in normal_ins:
+        i.set_type(data_set)
+    for i in append_ins:
+        i.set_type(data_set)
 
     #写入文件
     fileds = []
@@ -265,10 +195,32 @@ def main():
         writer.writerow(final)
             
         count += 1
-        if count % 10 == 0:
+        if count % 100 == 0:
             print count
 
     mdb.dump_cache()
-            
+
+from optparse import OptionParser 
+    
 if __name__ == '__main__':
-    main()
+
+    parser = OptionParser()
+    parser.add_option("-d", "--data", dest="data",help="选择数据集，训练还是测试")
+
+    (options, args) = parser.parse_args()
+
+    if options.data == "train":
+        print "训练集"
+        main("train")
+
+    elif options.data == "dev":
+        print "验证集合"
+        main("test")
+        
+    elif options.data == "test":
+        print "最后提交的结果"
+        print "还没做呢"
+        
+    else :
+        print "error,没有符合的数据集"
+        sys.exit(1)
