@@ -5,6 +5,9 @@ data_dump : data.py util/read_conf.py util/ds.py
 data_load : data.py util/read_conf.py util/ds.py
 	python3 data.py -d $(data_type) -a load
 
+dump_label : data.py util/read_conf.py util/ds.py
+	python data.py -d $(data_type) -a label
+
 stat : data.py statistics.py util/read_conf.py util/ds.py
 	pypy statistics.py
 

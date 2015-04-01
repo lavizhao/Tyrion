@@ -33,6 +33,7 @@ max_day = 36
 mdb = get_mydb()
 
 last_day = datetime.date(2014,12,18)
+day129 = datetime.date(2014,12,19)
 print "last day is ",last_day
 
 #将day转化成datetime.date
@@ -97,6 +98,10 @@ class feature_time_beh(abstract_f):
         td = tran.date
         if self.get_type() == "train":
             td = turn_day(td)
+        elif self.get_type() == "dev":
+            td = last_day
+        elif self.get_type() == "test":
+            td = day129
         else:
             td = last_day
 
@@ -157,7 +162,7 @@ class category_shopping_beh(feature_time_beh):
 #如果特征更改、增加那么放在append_list中
 #如果特征删除，那么放在哪里都不放。。。
 normal_list = []
-append_list = [user_item_shopping_beh,user_shopping_beh,item_shopping_beh,category_shopping_beh]
+append_list = [user_item_shopping_beh,user_shopping_beh,item_shopping_beh]
 
 def main(data_set):
     ot = one_tran(dt=data_set)
@@ -179,7 +184,16 @@ def main(data_set):
     for app in append_ins:
         fileds.extend(app.filed_names())
 
-    t = open(cf["train_dir"],"w")
+    if data_set == "train":
+        t = open(cf["train_dir"],"w")
+    elif data_set == "dev":
+        t = open(cf["dev_dir"],"w")
+    elif data_set == "test":
+        t = open(cf["pred_dir"],"w")
+    else:
+        print "有问题"
+        sys.exit(1)
+        
     writer = csv.DictWriter(t,fileds)
 
     first = {i:i for i in fileds}
@@ -215,11 +229,10 @@ if __name__ == '__main__':
 
     elif options.data == "dev":
         print "验证集合"
-        main("test")
+        main("dev")
         
     elif options.data == "test":
-        print "最后提交的结果"
-        print "还没做呢"
+        main("test")
         
     else :
         print "error,没有符合的数据集"

@@ -24,10 +24,12 @@ def get_conf():
 def one_tran(dt="total",tp="tran"):
     if dt == "total":
         f = open(conf["user_dir"])
-    elif dt == "test":
+    elif dt == "dev":
         f = open(conf["test128"])
     elif dt == "train":
         f = open(conf["train70"])
+    elif dt == "test":
+        f = open(conf["pred129"])
     else:
         print "未定义文件名%s"%(dt)
         sys.exit(1)
@@ -35,6 +37,8 @@ def one_tran(dt="total",tp="tran"):
     reader = csv.reader(f)
 
     count = 0
+    if dt == "test":
+        count += 1
     
     for line in reader:
         if count == 0:
@@ -87,6 +91,84 @@ def load_user():
     for tran in trans:
         print(tran)
 
+#存储label
+def dump_label(data_set):
+    print data_set
+    ot = one_tran(data_set)
+    t = ""
+    if data_set == "train":
+        t = open(conf["train_label"],"w")
+    elif data_set == "dev":
+        t = open(conf["dev_label"],"w")
+    else:
+        print "没做"
+        sys.exit(1)
+
+    count = 0
+        
+    for tran in ot:
+        beh = tran.behavior_type
+        lb = -1
+        if beh == 1:
+            lb = 0
+        elif beh == 4:
+            lb = 1
+        else:
+            print "err"
+            sys.exit(1)
+
+        t.write("%s\n"%(lb))
+        count += 1
+        if count % 10000 == 0:
+            print count
+            
+    print "done"
+
+def load_label(data_set):
+    if data_set == "train":
+        f = open(conf["train_label"])
+    elif data_set == "dev":
+        f = open(conf["dev_label"])
+    else:
+        print "没做"
+        sys.exit(1)
+
+    result = f.readlines()
+    result = [int(i) for i in result]
+    return result
+
+def load_data(data_set,rd):
+    if data_set == "train":
+        f = open(conf["train_dir"])
+    elif data_set == "dev":
+        f = open(conf["dev_dir"])
+    else:
+        print "没做"
+        sys.exit(1)
+
+    result = []
+    f.readline()
+    if data_set == "train":
+        count = 0
+        for line in f:
+            sp = line.split(',')
+            sp = [int(i) for i in sp]
+            result.append(sp)
+            count += 1
+            if count % rd == 0:
+                yield result
+                result = []
+    else:
+        count = 0
+        for line in f:
+            sp = line.split(',')
+            sp = [int(i) for i in sp]
+            result.append(sp)
+            count += 1
+            if count % 20000 == 0:
+                print count
+        yield result
+    
 if __name__ == '__main__':
     parser = OptionParser()
 
@@ -103,3 +185,6 @@ if __name__ == '__main__':
     elif options.action == "load":
         if options.data == "user":
             load_user()
+
+    if options.action == "label":
+        dump_label(options.data)
