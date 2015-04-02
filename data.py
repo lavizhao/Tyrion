@@ -109,7 +109,7 @@ def dump_label(data_set):
     for tran in ot:
         beh = tran.behavior_type
         lb = -1
-        if beh == 1:
+        if beh == 1 or beh==2 or beh==3:
             lb = 0
         elif beh == 4:
             lb = 1
@@ -168,6 +168,41 @@ def load_data(data_set,rd):
             if count % 20000 == 0:
                 print count
         yield result
+
+def load_data_total(data_set,rd):
+    if data_set == "train":
+        f = open(conf["train_dir"])
+    elif data_set == "dev":
+        f = open(conf["dev_dir"])
+    else:
+        print "没做"
+        sys.exit(1)
+
+    result = []
+    f.readline()
+    if data_set == "train":
+        count = 0
+        for line in f:
+            sp = line.split(',')
+            sp = [int(i) for i in sp]
+            result.append(sp)
+            count += 1
+            if count % 100000 == 0:
+                print count
+            if count < rd:
+                break
+        return  result
+    else:
+        count = 0
+        for line in f:
+            sp = line.split(',')
+            sp = [int(i) for i in sp]
+            result.append(sp)
+            count += 1
+            if count % 100000 == 0:
+                print count
+        return result
+
     
 if __name__ == '__main__':
     parser = OptionParser()

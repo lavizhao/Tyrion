@@ -27,4 +27,4 @@ del_db : db.py
 	python db.py del
 
 feature : gen_feature.py util/db.py util/ds.py
-	time python -O gen_feature.py 
+	time python -O gen_feature.py -d $(data)
