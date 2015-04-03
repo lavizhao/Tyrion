@@ -27,7 +27,7 @@ def get_mydb():
     mdb = mydb(host=host,user=user,passwd=passwd,port=3306)
     return mdb    
 
-max_day = 36
+max_day = 33
 
 #单线程的先这么写着
 mdb = get_mydb()
@@ -44,7 +44,7 @@ def turn_day(dt):
 
 def day_tim_beh():
     day = ["day%s"%(i) for i in range(1,max_day)]
-    beh = ["beh%s"%(i) for i in range(0,5)]
+    beh = ["beh%s"%(i) for i in range(1,5)]
 
     result = list(itertools.product(day,beh))
     result = ["%s_%s"%(i,j) for i,j in result]
@@ -161,59 +161,105 @@ class category_shopping_beh(feature_time_beh):
 #如果特征不变，那么放在normal_list中
 #如果特征更改、增加那么放在append_list中
 #如果特征删除，那么放在哪里都不放。。。
+#normal_list = [user_item_shopping_beh]
+#append_list = [user_shopping_beh,item_shopping_beh,category_shopping_beh]
 normal_list = []
 append_list = [user_item_shopping_beh,user_shopping_beh,item_shopping_beh]
 
 def main(data_set):
+
+    #根据数据集打开文件
     ot = one_tran(dt=data_set)
-    #ot = one_tran()
-    count = 0
 
     #这是这些类的实例化
     normal_ins = [i() for i in normal_list]
     append_ins = [i() for i in append_list]
+
+    normal_name = [i.get_name() for i in normal_ins]
+    append_name = [i.get_name() for i in append_ins]
+
+    #用来记录现有的不需要改变特征的特征名
+    normal_cands = []
+    for i in normal_ins:
+        normal_cands.extend(i.filed_names())
+
+    normal_cands = set(normal_cands)
+    
+    #设定这些类的数据集类型，主要是给他们制定日期是哪一天
     for i in normal_ins:
         i.set_type(data_set)
     for i in append_ins:
         i.set_type(data_set)
 
-    #写入文件
+    #fileds是csv文件的列名
     fileds = []
     for norm in normal_ins:
         fileds.extend(norm.filed_names())
     for app in append_ins:
         fileds.extend(app.filed_names())
 
+    #开文件，这里的文件主要作用是留住那些不变的
     if data_set == "train":
-        t = open(cf["train_dir"],"w")
+        f = open(cf["train_dir"])
     elif data_set == "dev":
-        t = open(cf["dev_dir"],"w")
+        f = open(cf["dev_dir"])
     elif data_set == "test":
-        t = open(cf["pred_dir"],"w")
+        f = open(cf["pred_dir"])
     else:
         print "有问题"
         sys.exit(1)
+
+    reader = csv.DictReader(f)
         
-    writer = csv.DictWriter(t,fileds)
+    #临时文件
+    temp_file = open(cf["temp_file"],"w")
+    writer = csv.DictWriter(temp_file,fileds)
 
     first = {i:i for i in fileds}
-    
     writer.writerow(first)
+
+    count = 0
     
     for tran in ot:
+        
+        #抽取现有特征的当前行
+        line = reader.next()
         final = {}
+
+        #抽需要改变的
         for i in append_ins:
             res = i.extract(tran)
             final = dict(final,**res) #字典合并
 
+        #抽取不需要改变的
+        for key in line:
+            if key in normal_cands:
+                final[key] = line[key]
+
         writer.writerow(final)
-            
+
         count += 1
-        if count % 100 == 0:
+        if count % 1000 == 0:
             print count
 
-    mdb.dump_cache()
+    f.close()
+    temp_file.close()
+    temp_file = open(cf["temp_file"])
 
+    if data_set == "train":
+        f = open(cf["train_dir"],"w")
+    elif data_set == "dev":
+        f = open(cf["dev_dir"],"w")
+    elif data_set == "test":
+        f = open(cf["pred_dir"],"w")
+    else:
+        print "有问题"
+        sys.exit(1)
+
+
+    for line in temp_file:
+        f.write(line)    
+    
 from optparse import OptionParser 
     
 if __name__ == '__main__':
@@ -232,8 +278,11 @@ if __name__ == '__main__':
         main("dev")
         
     elif options.data == "test":
+        print "测试集合"
         main("test")
         
     else :
         print "error,没有符合的数据集"
         sys.exit(1)
+
+    mdb.dump_cache()

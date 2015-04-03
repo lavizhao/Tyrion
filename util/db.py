@@ -29,7 +29,7 @@ class mydb:
         self.cache_limit = 1000 * 600
         self.select_count = 0
         self.hit_cache = 0
-        self.dump_limit = 10000
+        self.dump_limit = 100000
 
         #装载cache
         db_cache = cf["db_cache"] #获取文件名
@@ -82,7 +82,7 @@ class mydb:
     def select_sql(self,sql_str,db_name):
 
         self.select_count += 1
-        if (self.select_count) % 500 == 0:
+        if (self.select_count) % 3000 == 0:
             print "命中率",1.0 * self.hit_cache / self.select_count,"cache大小",len(self.cache)
 
         if sql_str in self.cache:
@@ -121,9 +121,7 @@ class mydb:
         cache_key = self.cache.keys()
         rem_key = []
         for key in cache_key:
-            if len(self.cache[key]) > 200:
-                pass
-            elif random.random() > 0.5:
+            if random.random() > 0.3:
                 rem_key.append(key)
             else:
                 pass

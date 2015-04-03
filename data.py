@@ -189,7 +189,7 @@ def load_data_total(data_set,rd):
             count += 1
             if count % 100000 == 0:
                 print count
-            if count < rd:
+            if count > rd:
                 break
         return  result
     else:
