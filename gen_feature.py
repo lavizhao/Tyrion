@@ -250,8 +250,11 @@ def main(data_set):
         if count % 1000 == 0:
             print count
 
-    f.close()
-    temp_file.close()
+    try : 
+        f.close()
+        temp_file.close()
+    except:
+        print "呵呵"
     temp_file = open(cf["temp_file"])
 
     if data_set == "train":
