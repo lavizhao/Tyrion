@@ -27,7 +27,7 @@ def get_mydb():
     mdb = mydb(host=host,user=user,passwd=passwd,port=3306)
     return mdb    
 
-max_day = 33
+max_day = 32
 
 #单线程的先这么写着
 mdb = get_mydb()
@@ -199,17 +199,22 @@ def main(data_set):
         fileds.extend(app.filed_names())
 
     #开文件，这里的文件主要作用是留住那些不变的
-    if data_set == "train":
-        f = open(cf["train_dir"])
-    elif data_set == "dev":
-        f = open(cf["dev_dir"])
-    elif data_set == "test":
-        f = open(cf["pred_dir"])
-    else:
-        print "有问题"
-        sys.exit(1)
+    try :    
+        if data_set == "train":
+            f = open(cf["train_dir"])
+        elif data_set == "dev":
+            f = open(cf["dev_dir"])
+        elif data_set == "test":
+            f = open(cf["pred_dir"])
+        else:
+            print "有问题"
+            sys.exit(1)
 
-    reader = csv.DictReader(f)
+    except :
+        f = None
+
+    if f != None:
+        reader = csv.DictReader(f)
         
     #临时文件
     temp_file = open(cf["temp_file"],"w")
@@ -223,7 +228,9 @@ def main(data_set):
     for tran in ot:
         
         #抽取现有特征的当前行
-        line = reader.next()
+        if f != None:
+            line = reader.next()
+            
         final = {}
 
         #抽需要改变的
@@ -231,10 +238,11 @@ def main(data_set):
             res = i.extract(tran)
             final = dict(final,**res) #字典合并
 
-        #抽取不需要改变的
-        for key in line:
-            if key in normal_cands:
-                final[key] = line[key]
+        if f != None:
+            #抽取不需要改变的
+            for key in line:
+                if key in normal_cands:
+                    final[key] = line[key]
 
         writer.writerow(final)
 
